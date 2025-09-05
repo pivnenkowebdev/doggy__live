@@ -1,9 +1,7 @@
 import pygame as p
 
-# Инициализация pg
 p.init()
 
-# Размеры окна
 scr_width = 1000
 scr_height = 1000
 icon_size = 80
@@ -35,9 +33,7 @@ class Button:
         self.image = self.idle_image
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
-
         self.is_pressed = False
-
         self.text = text_render(text, text_font)
         self.text_rect = self.text.get_rect()
         self.text_rect.center = self.rect.center
@@ -45,7 +41,6 @@ class Button:
     def draw(self, screen):
         screen.blit(self.image, self.rect)
         screen.blit(self.text, self.text_rect)
-
 
     def update(self):
         mouse_pos = p.mouse.get_pos()
@@ -80,7 +75,11 @@ class Food:
         self.food_img = load_img(item_icon, food_sz, food_sz)
         self.sat_pow = satiety
         self.med_pow = med_pow
+        # отрисовка еды падает, если нет этих полей
+        self.is_bought = False
+        self.is_using = False
 
+# DRY
 class FoodMenu:
     def __init__(self, game):
         self.game = game
@@ -93,8 +92,8 @@ class FoodMenu:
 
         self.items = [Food("Яблоко", 5, "images/food/apple.png", 3),
                       Food("Кость", 8, "images/food/bone.png", 5),
-                      Food("Корм", 24, "images/food/dog food.png", 15),
-                      Food("Элитный корм", 60, "images/food/dog food elite.png",30, 5),
+                      Food("Корм", 24, "images/food/dog_food.png", 15),
+                      Food("Элитный корм", 60, "images/food/dog_food_elite.png",30, 5),
                       Food("Мясо", 75, "images/food/meat.png", 45, 5),
                       Food("Лекарство", 100, "images/food/medicine.png", 0, 15),]
 
@@ -110,12 +109,18 @@ class FoodMenu:
         self.price = self.items[self.current_item].price
 
     def next(self):
-        if self.current_item != len(self.items):
+        if self.current_item < len(self.items) - 1:
             self.current_item += 1
+            self.price = self.items[self.current_item].price
+            self.item_rect = self.items[self.current_item].food_img.get_rect()
+            self.item_rect.center = scr_width // 2, scr_height // 2
 
     def back(self):
-        if self.current_item != 0:
+        if self.current_item > 0:
             self.current_item -= 1
+            self.price = self.items[self.current_item].price
+            self.item_rect = self.items[self.current_item].food_img.get_rect()
+            self.item_rect.center = scr_width // 2, scr_height // 2
 
     def update(self):
         self.next_but.update()
@@ -127,24 +132,26 @@ class FoodMenu:
 
     def draw(self, screen):
         screen.blit(self.menu_page, (0, 0))
-
-        screen.blit(self.items[self.current_item].item_icon, self.item_rect)
+        # изменил имя свойства
+        screen.blit(self.items[self.current_item].food_img, self.item_rect)
 
         self.next_but.draw(screen)
         self.back_but.draw(screen)
-        screen.blit(self.price, scr_width//2, scr_height//3)
+        #тут было число - нужна строка
+        screen.blit(text_render(self.price), (scr_width//2, scr_height//3))
 
+        #is_bought и is_using нет в классе Food - ошибка (добавил)
         if self.items[self.current_item].is_bought:
             screen.blit(self.bottom_label_on, (0, 0))
         else:
             screen.blit(self.bottom_label_off, (0, 0))
-
 
         if self.items[self.current_item].is_using:
             screen.blit(self.bottom_label_on, (0, 0))
         else:
             screen.blit(self.bottom_label_off, (0, 0))
 
+# DRY
 class ClothesMenu:
     def __init__(self, game):
         self.game = game
@@ -169,9 +176,14 @@ class ClothesMenu:
         self.back_but = Button("Назад", but_width - but_height - 15, scr_height - menuY - but_height, width=int(but_width // 1.2),
                                height=int(but_height // 1.2), func=self.back)
         self.price = self.items[self.current_item].price
+
     def next(self):
-        if self.current_item != len(self.items):
+         # более привычная запись
+        if self.current_item < len(self.items) - 1:
             self.current_item += 1
+        # индексация начинается с нуля, условие вызовет ошибку???
+        #if self.current_item != len(self.items):
+            #self.current_item += 1
 
     def back(self):
         if self.current_item != 0:
@@ -183,6 +195,8 @@ class ClothesMenu:
 
     def is_clicked(self, event):
         self.next_but.is_clicked(event)
+        # кнопку назад забыли обработать
+        self.back_but.is_clicked(event)
 
     def draw(self, screen):
         screen.blit(self.menu_page, (0, 0))
@@ -191,28 +205,27 @@ class ClothesMenu:
 
         self.next_but.draw(screen)
         self.back_but.draw(screen)
-        screen.blit(self.price, scr_width//2, scr_height//3)
+        # нужна строка - было число
+        screen.blit(text_render(self.price), (scr_width//2, scr_height//3))
 
         if self.items[self.current_item].is_bought:
             screen.blit(self.bottom_label_on, (0, 0))
         else:
             screen.blit(self.bottom_label_off, (0, 0))
 
-
         if self.items[self.current_item].is_using:
             screen.blit(self.bottom_label_on, (0, 0))
         else:
             screen.blit(self.bottom_label_off, (0, 0))
 
-
 class Game:
     def __init__(self):
         self.screen = p.display.set_mode((scr_width, scr_height))
         p.display.set_caption("Виртуальный питомец")
-        i_c_o_n = p.Surface.convert(p.image.load("images/dog.png"))
-        p.display.set_icon(i_c_o_n)
+        pet_icon = p.Surface.convert(p.image.load("images/dog.png"))
+        p.display.set_icon(pet_icon)
 
-        self.mode = "Food menu"
+        self.mode = "Main"
 
         self.money = 10
         self.coins_per_second = 1000
@@ -235,7 +248,14 @@ class Game:
 
         button_x = scr_width - but_width
 
-        self.buttons = [Button("Еда", button_x, padding * 2 + icon_size), Button("Одежда", button_x, (padding * 2 + icon_size)*1.7, func=self.clothes_menu_on), Button("Игры", button_x, (padding * 2 + icon_size)*2.4), Button("Улучшить", scr_width-but_width//2, scr_height-but_height//2, but_width//2, but_height//2, font_jr, func=self.increase_money)]
+        # не во всех кнопках были переданы колбеки
+        self.buttons = [
+            Button("Еда", button_x, padding * 2 + icon_size, func=self.food_menu_on),
+            Button("Одежда", button_x, (padding * 2 + icon_size) * 1.7, func=self.clothes_menu_on),
+            Button("Игры", button_x, (padding * 2 + icon_size) * 2.4),  # потом добавишь func для игр
+            Button("Улучшить", scr_width - but_width // 2, scr_height - but_height // 2,
+                   but_width // 2, but_height // 2, font_jr, func=self.increase_money)
+        ]
 
         self.FARM_MONEY = p.USEREVENT + 1
 
@@ -244,10 +264,9 @@ class Game:
 
     def clothes_menu_on(self):
         self.mode = "Clothes menu"
+
     def food_menu_on(self):
         self.mode = "Food menu"
-
-
 
     def increase_money(self):
         for cost, check in self.costs_of_upgrade.items():
@@ -260,7 +279,8 @@ class Game:
     def click(self, event):
         if event.type == p.MOUSEBUTTONDOWN and event.button == 1:
             self.money += 1
-            self.screen.blit("images/money.png")
+            # монеты уже отрисованы
+            # self.screen.blit("images/money.png")
 
     def run(self):
         while True:
@@ -270,25 +290,48 @@ class Game:
 
     def event(self):
         for event in p.event.get():
+            # кликер не работал, т.к. не вызывался
+            self.click(event)
+            # по хорошему тогда нужно убрать ниже все проверки и вынести в отдельные методы как и click (писать обработку условия внутри)
             if event.type == p.QUIT:
                 p.quit()
                 exit()
-            if event.type == p.KEYDOWN:
-                if event.key == p.K_ESCAPE:
+                # если есть возможность избежать вложенных условий - круто
+            if event.type == p.KEYDOWN and event.key == p.K_ESCAPE:
                     self.mode = "Main"
             elif event.type == self.FARM_MONEY:
                 self.money += 1
 
-            self.buttons[0].is_clicked(event)
-            self.buttons[1].is_clicked(event)
-            self.buttons[2].is_clicked(event)
-            self.buttons[3].is_clicked(event)
+            # чтобы каждый раз не вешать прослушку на кнопку, перебираем циклом (а вдруг добавишь новую? тоже руками её обрабатывать будем?)
+            for btn in self.buttons:
+                btn.is_clicked(event)
+
+            #self.buttons[0].is_clicked(event)
+            #self.buttons[1].is_clicked(event)
+            #self.buttons[2].is_clicked(event)
+            #self.buttons[3].is_clicked(event)
+
+            # не было прослушек на стрелки в меню
+            if self.mode == "Food menu":
+                self.Fmenu.is_clicked(event)
+            elif self.mode == "Clothes menu":
+                self.Cmenu.is_clicked(event)
 
     def update(self):
-        self.buttons[0].update()
-        self.buttons[1].update()
-        self.buttons[2].update()
-        self.buttons[3].update()
+        # чтобы каждый раз не вешать прослушку на кнопку, перебираем циклом (а вдруг добавишь новую? тоже руками её обрабатывать будем?)
+        for btn in self.buttons:
+            btn.update()
+
+        # обновление
+        if self.mode == "Food menu":
+            self.Fmenu.update()
+        elif self.mode == "Clothes menu":
+            self.Cmenu.update()
+
+        # self.buttons[0].update()
+        # self.buttons[1].update()
+        # self.buttons[2].update()
+        # self.buttons[3].update()
 
     def draw(self):
         self.screen.blit(self.background, (0, 0))
@@ -304,10 +347,13 @@ class Game:
         self.screen.blit(text_render(self.health), (padding + icon_size, (icon_size - padding * 2) * 2.8))
         self.screen.blit(text_render(self.money), (scr_width - icon_size * 1.5, (icon_size - padding * 2)//2))
 
-        self.buttons[0].draw(self.screen)
-        self.buttons[1].draw(self.screen)
-        self.buttons[2].draw(self.screen)
-        self.buttons[3].draw(self.screen)
+        for btn in self.buttons:
+            btn.draw(self.screen)
+
+        # self.buttons[0].draw(self.screen)
+        # self.buttons[1].draw(self.screen)
+        # self.buttons[2].draw(self.screen)
+        # self.buttons[3].draw(self.screen)
 
         self.screen.blit(self.dog_img, (scr_width//2 - dog_width//2, dog_y))
 
@@ -315,8 +361,8 @@ class Game:
             self.Cmenu.draw(self.screen)
         if self.mode == "Food menu":
             self.Fmenu.draw(self.screen)
-        p.display.flip()
 
+        p.display.flip()
 
 if __name__ == "__main__":
     Game()
