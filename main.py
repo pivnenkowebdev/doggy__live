@@ -138,7 +138,7 @@ class MENU:
                                width=int(but_width // 1.2),
                                height=int(but_height // 1.2), func=self.use)
 
-        self.unuse_but = Button("Снять", but_width - but_height + 10, scr_height - menuY - 2 * but_height,
+        self.unuse_but = Button("Снять", but_width - but_height + 10, scr_height - menuY - 3 * but_height,
                                width=int(but_width // 1.2),
                                height=int(but_height // 1.2), func=self.unuse)
 
@@ -159,7 +159,9 @@ class MENU:
             self.price = self.items[self.current_menu][self.current_item].price
 
     def use(self):
-        self.use_items.append(self.items[self.current_menu][self.current_item])
+        if self.items[self.current_menu][self.current_item].is_bought:
+            self.use_items.append(self.items[self.current_menu][self.current_item])
+            self.items[self.current_menu][self.current_item].is_using = True
 
     def unuse(self):
         self.use_items.remove(self.items[self.current_menu][self.current_item])
@@ -168,8 +170,10 @@ class MENU:
     def buy(self):
         if self.money >= self.items[self.current_menu][self.current_item].price:
             self.buy_items.append(self.items[self.current_menu][self.current_item])
+            print(self.items[self.current_menu][self.current_item])
             self.items[self.current_menu][self.current_item].is_bought = True
             self.money -= self.items[self.current_menu][self.current_item].price
+            print(self.use_items)
 
     def update(self):
         self.next_but.update()
@@ -334,6 +338,9 @@ class Game:
             btn.draw(self.screen)
 
         self.screen.blit(self.dog_img, (scr_width//2 - dog_width//2, dog_y))
+
+        for item in self.menu.use_items:
+            self.screen.blit(item.item_img, (scr_width//2 - dog_width//2, dog_y))
 
         if self.menu.current_menu == 0 or self.menu.current_menu == 1:
             self.menu.draw(self.screen)
