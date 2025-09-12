@@ -1,4 +1,6 @@
 import pygame as p
+import time as t
+from random import randint
 
 p.init()
 
@@ -235,6 +237,7 @@ class Game:
         self.items_price = 0
         self.coins_per_second = 1000
         self.costs_of_upgrade = {100: False, 1000: False, 5000: False, 10000: False}
+        self.start_time = t.time()
 
         self.satiety = 100
         self.money = 100
@@ -261,8 +264,11 @@ class Game:
         ]
 
         self.FARM_MONEY = p.USEREVENT + 1
-
         p.time.set_timer(self.FARM_MONEY, 1000)
+
+        self.DECREASE_PROPERTY = p.USEREVENT + 2
+        p.time.set_timer(self.DECREASE_PROPERTY, 1000)
+
         self.run()
 
     def foodMenu(self):
@@ -280,6 +286,15 @@ class Game:
                 self.money -= cost
                 self.costs_of_upgrade[cost] = True
                 break
+
+    def DECREASE(self):
+        chance = randint(1, 10)
+        if chance <= 5:
+            self.satiety -= 1
+        elif 5 >= chance <= 9:
+            self.happiness -= 1
+        else:
+            self.health -= 1
 
     def click(self, event):
         if event.type == p.MOUSEBUTTONDOWN and event.button == 1:
@@ -306,6 +321,9 @@ class Game:
 
             elif event.type == self.FARM_MONEY:
                 self.money += 1
+
+            elif event.type == self.DECREASE_PROPERTY:
+                self.DECREASE()
 
             for btn in self.buttons:
                 btn.is_clicked(event)
