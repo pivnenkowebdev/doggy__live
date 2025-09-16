@@ -1,6 +1,6 @@
 import pygame as p
 import time as t
-from random import randint
+from random import randint, choice
 
 p.init()
 
@@ -79,6 +79,73 @@ class ITEM:
 
         self.is_bought = False
         self.is_using = False
+
+class JRDOG(p.sprite.Sprite):
+    def __init__(self):
+        p.sprite.Sprite.__init__(self)
+        self.dog = load_img("images/dog.png", scr_width, scr_height)
+        self.start_pos = (scr_width//2, scr_height - menuY - 10)
+        self.ground = True
+        self.dog_rect = self.dog.get_rect()
+        self.dog_rect.center = self.start_pos
+
+
+    def moves(self):
+        keys = p.key.get_pressed()
+        if keys[p.K_a]:
+            self.dog_rect.x -= 5
+        if keys[p.K_d]:
+            self.dog_rect.x -= 5
+        if keys[p.K_space] and self.ground:
+            self.dog_rect.y += 10
+            p.timer(self.dog_rect, 1000)
+
+class TOY(p.sprite.Sprite):
+    def __init__(self):
+        p.sprite.Sprite.__init__(self)
+        self.toy = load_img(f"images/toys/{choice(["ball", "blue bone", "red bone"])}.png", (80, 80))
+        self.toy_rect = self.toy.get_rect()
+        self.toy_rect.center = (randint(15, menuX), 10)
+
+    def update(self):
+        self.toy_rect.y -= 1
+
+class MINI_GAME:
+    def __init__(self, happiness):
+        self.happiness = happiness
+        self.bckgrnd = load_img("images/game_background.png", scr_width, scr_height)
+        self.screen = self.happiness.screen
+
+        self.dog = JRDOG()
+        self.toys = p.sprite.Group(TOY)
+
+        self.score = 0
+
+        self.start_time = p.time.get_ticks()
+        self.interval = 1000 * 30
+
+    def new_game(self):
+        self.dog = JRDOG()
+        self.toys = p.sprite.Group(TOY)
+
+        self.score = 0
+
+        self.start_time = p.time.get_ticks()
+        self.interval = 1000 * 30
+
+    def update(self):
+        pass
+
+    def draw(self):
+
+
+        self.screen.blit(self.bckgrnd, (0, 0))
+        self.screen.blit(self.dog, self.dog.rect.center)
+        self.screen.blit(text_render(self.score), (menuX - 15))
+
+        while p.time.get_ticks() - self.start_time <= self.interval:
+            self.screen.blit(self.toys, self.toys.toys_rect.center)
+
 
 class MENU:
     def __init__(self, money):
@@ -252,13 +319,14 @@ class Game:
         self.dog_img = load_img("images/dog.png", dog_width, dog_height)
 
         self.menu = MENU(self.money)
+        self.mini_game = MINI_GAME(self.happiness)
 
         button_x = scr_width - but_width
 
         self.buttons = [
             Button("Еда", button_x, padding * 2 + icon_size, func=self.foodMenu),
             Button("Одежда", button_x, (padding * 2 + icon_size) * 1.7, func=self.clothesMenu),
-            Button("Игры", button_x, (padding * 2 + icon_size) * 2.4),  # потом добавишь func для игр
+            Button("Игры", button_x, (padding * 2 + icon_size) * 2.4, func=self.mini_game),
             Button("Улучшить", scr_width - but_width // 2, scr_height - but_height // 2,
                    but_width // 2, but_height // 2, font_jr, func=self.increase_money)
         ]
@@ -367,3 +435,9 @@ class Game:
 
 if __name__ == "__main__":
     Game()
+
+#1. Отрисовать окно мини-игры при нажатии на кнопку "Игры" в меню
+#1.1 Отрисовать собаку
+#1.2 Отрисовка игрушек
+#2. разработать контакт собаки и игрушек
+#3. закрытие игры по времени
