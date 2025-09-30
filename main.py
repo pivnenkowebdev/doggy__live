@@ -83,11 +83,11 @@ class ITEM:
 class JRDOG(p.sprite.Sprite):
     def __init__(self):
         p.sprite.Sprite.__init__(self)
-        self.dog = load_img("images/dog.png", scr_width, scr_height)
-        self.start_pos = (scr_width//2, scr_height - menuY - 10)
+        self.image = load_img("images/dog.png", menuX*1.7, menuY*1.7)
+        self.start_pos = (scr_width//2 - 50, scr_height - menuY - 170)
         self.ground = True
-        self.dog_rect = self.dog.get_rect()
-        self.dog_rect.center = self.start_pos
+        self.rect = self.image.get_rect()
+        self.rect.center = self.start_pos
 
 
     def moves(self):
@@ -101,57 +101,63 @@ class JRDOG(p.sprite.Sprite):
             p.timer(self.dog_rect, 1000)
 
 class TOY(p.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, toy_rect):
         p.sprite.Sprite.__init__(self)
-        self.toy = load_img(f"images/toys/{choice(["ball", "blue bone", "red bone"])}.png", (80, 80))
-        self.toy_rect = self.toy.get_rect()
-        self.toy_rect.center = (randint(15, menuX), 10)
+        self.image = load_img(f"images/toys/{choice(["ball", "blue bone", "red bone"])}.png", 80, 80)
+        self.rect = toy_rect
+
 
     def update(self):
-        self.toy_rect.y -= 1
+        self.rect[1] -= 1
 
 class MINI_GAME:
     def __init__(self, happiness):
         self.happiness = happiness
         self.bckgrnd = load_img("images/game_background.png", scr_width, scr_height)
-        self.screen = self.happiness.screen
-
+        self.game_menu = False
         self.dog = JRDOG()
-        self.toys = p.sprite.Group(TOY)
-
+        self.toys_group = p.sprite.Group()
         self.score = 0
-
-        self.start_time = p.time.get_ticks()
         self.interval = 1000 * 30
+        self.start_time = 0
 
     def new_game(self):
         self.dog = JRDOG()
-        self.toys = p.sprite.Group(TOY)
 
         self.score = 0
 
         self.start_time = p.time.get_ticks()
         self.interval = 1000 * 30
+        return None
 
     def update(self):
+        self.dog.update()
+        self.toys_group.update()
+
+        hits = p.sprite.spritecollide(self.dog, self.toys_group, True, p.sprite.collide_rect_ratio(0.6))
+        self.score += hits
+
+        if p.time.get_ticks() - self.start_time >= self.interval:
+            self.happiness += self.score
+            self.game_menu = False
+
+    def is_clicked(self, event):
         pass
 
-    def draw(self):
+    def draw(self, screen):
+        if sel
+
+        screen.blit(self.bckgrnd, (0, 0))
+        screen.blit(self.dog.image, self.dog.rect.center)
+        screen.blit(text_render(self.score), (menuX + 70, menuY + 20))
 
 
-        self.screen.blit(self.bckgrnd, (0, 0))
-        self.screen.blit(self.dog, self.dog.rect.center)
-        self.screen.blit(text_render(self.score), (menuX - 15))
-
-        while p.time.get_ticks() - self.start_time <= self.interval:
-            self.screen.blit(self.toys, self.toys.toys_rect.center)
 
 
 class MENU:
-    def __init__(self, money):
-        self.money = money
-        self.current_menu = -1
-        self.current_item = 0
+    def __init__(self, games_link):
+        self.games_link = games_link
+        #мне нужно здесь обрабатывать моды из games_link (turn on/off)
         self.menu_page = load_img("images/menu/menu_page.png", scr_width, scr_height)
         self.bottom_label_off = load_img("images/menu/bottom_label_off.png", scr_width, scr_height)
         self.bottom_label_on = load_img("images/menu/bottom_label_on.png", scr_width, scr_height)
@@ -296,6 +302,7 @@ class MENU:
 
 class Game:
     def __init__(self):
+        self.mode = "main"
         self.screen = p.display.set_mode((scr_width, scr_height))
         p.display.set_caption("Виртуальный питомец")
         pet_icon = p.Surface.convert(p.image.load("images/dog.png"))
@@ -318,15 +325,15 @@ class Game:
         self.health_img = load_img("images/health.png", icon_size, icon_size)
         self.dog_img = load_img("images/dog.png", dog_width, dog_height)
 
-        self.menu = MENU(self.money)
-        self.mini_game = MINI_GAME(self.happiness)
+        self.menu = MENU(self)
+        self.mini_game = MINI_GAME(self)
 
         button_x = scr_width - but_width
 
         self.buttons = [
-            Button("Еда", button_x, padding * 2 + icon_size, func=self.foodMenu),
-            Button("Одежда", button_x, (padding * 2 + icon_size) * 1.7, func=self.clothesMenu),
-            Button("Игры", button_x, (padding * 2 + icon_size) * 2.4, func=self.mini_game),
+            Button("Еда", button_x, padding * 2 + icon_size, func=self.SET_MODE("food")),
+            Button("Одежда", button_x, (padding * 2 + icon_size) * 1.7, func=self.SET_MODE("clothes")),
+            Button("Игры", button_x, (padding * 2 + icon_size) * 2.4, func=self.SET_MODE("mini_game")),
             Button("Улучшить", scr_width - but_width // 2, scr_height - but_height // 2,
                    but_width // 2, but_height // 2, font_jr, func=self.increase_money)
         ]
@@ -339,13 +346,8 @@ class Game:
 
         self.run()
 
-    def foodMenu(self):
-        self.menu.current_menu = 0
-        self.menu.current_item = 0
-
-    def clothesMenu(self):
-        self.menu.current_menu = 1
-        self.menu.current_item = 0
+    def SET_MODE(self, mode):
+        self.mode = mode
 
     def increase_money(self):
         for cost, check in self.costs_of_upgrade.items():
@@ -399,12 +401,18 @@ class Game:
             if self.menu.current_menu == 0 or self.menu.current_menu == 1:
                 self.menu.is_clicked(event)
 
+            if self.mini_game.game_menu:
+                self.mini_game.is_clicked(event)
+
     def update(self):
         for btn in self.buttons:
             btn.update()
 
         if self.menu.current_menu == 0 or self.menu.current_menu == 1:
             self.menu.update()
+
+        if self.mini_game.game_menu:
+            self.mini_game.update()
 
     def draw(self):
         self.screen.blit(self.background, (0, 0))
@@ -431,13 +439,19 @@ class Game:
         if self.menu.current_menu == 0 or self.menu.current_menu == 1:
             self.menu.draw(self.screen)
 
+        if self.mini_game.game_menu:
+            self.mini_game.draw(self.screen)
+
         p.display.flip()
 
 if __name__ == "__main__":
     Game()
 
-#1. Отрисовать окно мини-игры при нажатии на кнопку "Игры" в меню
-#1.1 Отрисовать собаку
-#1.2 Отрисовка игрушек
-#2. разработать контакт собаки и игрушек
-#3. закрытие игры по времени
+#1 refactor услвие для смены режимов в игре(меню одежды и еды, мини игра, мейн)
+#1.1 рефактор MENU.draw()
+
+    #1. Отрисовать окно мини-игры при нажатии на кнопку "Игры" в меню +
+    #1.1 Отрисовать собаку +
+    #1.2 Отрисовка игрушек
+    #2. разработать контакт собаки и игрушек
+    #3. закрытие игры по времени
