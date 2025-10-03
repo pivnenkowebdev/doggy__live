@@ -308,6 +308,8 @@ class Game:
         p.display.set_caption("Виртуальный питомец")
         pet_icon = p.Surface.convert(p.image.load("images/dog.png"))
         p.display.set_icon(pet_icon)
+        self.menu = None
+        self.mini_game = None
 
         self.items_price = 0
         self.coins_per_second = 1000
@@ -429,33 +431,35 @@ class Game:
         self.screen.blit(self.background, (0, 0))
 
         self.screen.blit(self.happin_img, (padding * 2, padding * 2))
-        self.screen.blit(self.satiety_img, (padding * 2, padding  * 2 + icon_size))
+        self.screen.blit(self.satiety_img, (padding * 2, padding * 2 + icon_size))
         self.screen.blit(self.health_img, (padding * 2, padding * 2 + icon_size * 2))
         self.screen.blit(self.money_img, (scr_width - icon_size, padding * 2))
 
-
-        self.screen.blit(text_render(self.happiness), (padding + icon_size, (icon_size - padding * 2)//2))
+        self.screen.blit(text_render(self.happiness), (padding + icon_size, (icon_size - padding * 2) // 2))
         self.screen.blit(text_render(self.satiety), (padding + icon_size, (icon_size - padding * 2) * 1.7))
         self.screen.blit(text_render(self.health), (padding + icon_size, (icon_size - padding * 2) * 2.8))
-        self.screen.blit(text_render(self.money), (scr_width - icon_size * 1.5, (icon_size - padding * 2)//2))
+        self.screen.blit(text_render(self.money), (scr_width - icon_size * 1.5, (icon_size - padding * 2) // 2))
 
         for btn in self.buttons:
             btn.draw(self.screen)
 
-        self.screen.blit(self.dog_img, (scr_width//2 - dog_width//2, dog_y))
+        self.screen.blit(self.dog_img, (scr_width // 2 - dog_width // 2, dog_y))
 
-        for item in self.menu.use_items:
-            self.screen.blit(item.item_img, (scr_width//2 - dog_width//2, dog_y))
+        # вот тут добавил проверку на то, что меню инициализиировано
+        if self.menu:
+            for item in self.menu.use_items:
+                self.screen.blit(item.item_img, (scr_width // 2 - dog_width // 2, dog_y))
 
         if self.mode == "food":
             self.menu.draw(self.screen)
         if self.mode == "clothes":
             self.menu.draw(self.screen)
 
-        if self.mini_game.game_menu:
+        if self.mini_game and self.mini_game.game_menu:
             self.mini_game.draw(self.screen)
 
         p.display.flip()
+
 
 if __name__ == "__main__":
     Game()
