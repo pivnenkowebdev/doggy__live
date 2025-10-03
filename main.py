@@ -155,7 +155,8 @@ class MINI_GAME:
 class MENU:
     def __init__(self, games_link):
         self.mode = games_link.mode
-        #мне нужно здесь обрабатывать моды из games_link (turn on/off)
+        #ссылка на всю игру
+        self.games_link = games_link
         self.menu_page = load_img("images/menu/menu_page.png", scr_width, scr_height)
         self.bottom_label_off = load_img("images/menu/bottom_label_off.png", scr_width, scr_height)
         self.bottom_label_on = load_img("images/menu/bottom_label_on.png", scr_width, scr_height)
@@ -234,22 +235,37 @@ class MENU:
             self.price = self.items[self.mode][self.current_item].price
 
     def use(self):
-        if self.items[self.mode][self.current_item].is_bought:
-            self.use_items.append(self.items[self.mode][self.current_item])
-            self.items[self.mode][self.current_item].is_using = True
+        item = self.items[self.mode][self.current_item]
+        if item.is_bought and item not in self.use_items:
+            self.use_items.append(item)
+            item.is_using = True
 
     def unuse(self):
-        self.use_items.remove(self.items[self.mode][self.current_item])
-        self.items[self.mode][self.current_item].is_using = False
+        item = self.items[self.mode][self.current_item]
+        if item in self.use_items:
+            self.use_items.remove(item)
+            item.is_using = False
 
     def buy(self):
-        if self.games_link.money >= self.items[self.mode][self.current_item].price:
-            self.buy_items.append(self.items[self.mode][self.current_item])
-            print(self.items[self.mode][self.current_item])
-            self.items[self.mode][self.current_item].is_bought = True
-            #проверить что куплено
-            self.games_link.money -= self.items[self.mode][self.current_item].price
-            print(self.use_items)
+        item = self.items[self.mode][self.current_item]
+        # проверка на то что куплено или нет
+        if self.games_link.money >= item.price and not item.is_bought:
+            self.buy_items.append(item)
+            item.is_bought = True
+            self.games_link.money -= item.price
+            print(f"Куплено: {item.name}, осталось денег: {self.games_link.money}")
+
+            # если еда, применяем её эффекты сразу
+            if self.mode == "food":
+                self.games_link.satiety += item.sat_pow
+                self.games_link.health += item.med_pow
+                # счастье можно тоже увеличить, например:
+                self.games_link.happiness += item.med_pow // 2
+
+                # ограничение по максимальному значению (чтобы пЭс не был имбой)
+                self.games_link.satiety = min(self.games_link.satiety, 100)
+                self.games_link.health = min(self.games_link.health, 100)
+                self.games_link.happiness = min(self.games_link.happiness, 100)
 
     def update(self):
         self.next_but.update()
@@ -355,7 +371,8 @@ class Game:
             self.menu = MENU(self)
         elif self.mode == "mini_game":
             self.mini_game = MINI_GAME(self)
-
+            #запуск игры
+            self.mini_game.game_menu = True
 
     def increase_money(self):
         for cost, check in self.costs_of_upgrade.items():
@@ -388,14 +405,14 @@ class Game:
         for event in p.event.get():
 
             self.click(event)
-            # по хорошему тогда нужно убрать ниже все проверки и вынести в отдельные методы как и click (писать обработку условия внутри)
 
             if event.type == p.QUIT:
                 p.quit()
                 exit()
-                # если есть возможность избежать вложенных условий - круто
+            # сброс режима
             if event.type == p.KEYDOWN and event.key == p.K_ESCAPE:
-                self.menu.current_menu = -1
+                self.menu = None
+                self.mode = "main"
 
             elif event.type == self.FARM_MONEY:
                 self.money += 1
@@ -463,12 +480,3 @@ class Game:
 
 if __name__ == "__main__":
     Game()
-
-#1 refactor услвие для смены режимов в игре(меню одежды и еды, мини игра, мейн)
-#1.1 рефактор MENU.draw()
-
-    #1. Отрисовать окно мини-игры при нажатии на кнопку "Игры" в меню +
-    #1.1 Отрисовать собаку +
-    #1.2 Отрисовка игрушек
-    #2. разработать контакт собаки и игрушек
-    #3. закрытие игры по времени
