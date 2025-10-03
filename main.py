@@ -134,8 +134,8 @@ class MINI_GAME:
         self.dog.update()
         self.toys_group.update()
 
-        hits = p.sprite.spritecollide(self.dog, self.toys_group, True, p.sprite.collide_rect_ratio(0.6))
-        self.score += hits
+        # hits = p.sprite.spritecollide(self.dog, self.toys_group, True, p.sprite.collide_rect_ratio(0.6))
+        # self.score += hits
 
         if p.time.get_ticks() - self.start_time >= self.interval:
             self.happiness += self.score
@@ -145,8 +145,6 @@ class MINI_GAME:
         pass
 
     def draw(self, screen):
-        if sel
-
         screen.blit(self.bckgrnd, (0, 0))
         screen.blit(self.dog.image, self.dog.rect.center)
         screen.blit(text_render(self.score), (menuX + 70, menuY + 20))
@@ -156,7 +154,7 @@ class MINI_GAME:
 
 class MENU:
     def __init__(self, games_link):
-        self.games_link = games_link
+        self.mode = games_link.mode
         #мне нужно здесь обрабатывать моды из games_link (turn on/off)
         self.menu_page = load_img("images/menu/menu_page.png", scr_width, scr_height)
         self.bottom_label_off = load_img("images/menu/bottom_label_off.png", scr_width, scr_height)
@@ -172,8 +170,10 @@ class MENU:
         self.u_t_rect = self.use_text.get_rect()
         self.u_t_rect.center = (scr_width // 1.29, scr_height // 4)
 
-        self.items = [
-                      [
+        self.current_item = 0
+
+        self.items = {
+              "food": [
                        ITEM("Apple", 5, "images/food/apple.png", 2, 0),
                        ITEM("Bone", 10, "images/food/bone.png", 5, 0),
                        ITEM("DogFood", 9, "images/food/dog_food.png", 4, 0),
@@ -184,7 +184,7 @@ class MENU:
 
                        ,
 
-                       [
+            "clothes": [
                        ITEM("Blue T-Shirt", 50, "images/items/blue t-shirt.png"),
                        ITEM("Green Boots", 150, "images/items/boots.png"),
                        ITEM("Pink Butterfly (Bow)", 15, "images/items/bow.png"),
@@ -196,7 +196,7 @@ class MENU:
                        ITEM("Blue Sunglasses", 50, "images/items/sunglasses.png"),
                        ITEM("Yellow T-Shirt", 50, "images/items/yellow t-shirt.png")
                        ]
-                      ]
+        }
 
         self.use_items = []
         self.buy_items = []
@@ -221,33 +221,34 @@ class MENU:
                                width=int(but_width // 1.2),
                                height=int(but_height // 1.2), func=self.buy)
 
-        self.price = self.items[self.current_menu][self.current_item].price
+        self.price = self.items[self.mode][self.current_item].price
 
     def next(self):
-        if self.current_item < len(self.items[self.current_menu]) - 1:
+        if self.current_item < len(self.items[self.mode]) - 1:
             self.current_item += 1
-            self.price = self.items[self.current_menu][self.current_item].price
+            self.price = self.items[self.mode][self.current_item].price
 
     def back(self):
         if self.current_item > 0:
             self.current_item -= 1
-            self.price = self.items[self.current_menu][self.current_item].price
+            self.price = self.items[self.mode][self.current_item].price
 
     def use(self):
-        if self.items[self.current_menu][self.current_item].is_bought:
-            self.use_items.append(self.items[self.current_menu][self.current_item])
-            self.items[self.current_menu][self.current_item].is_using = True
+        if self.items[self.mode][self.current_item].is_bought:
+            self.use_items.append(self.items[self.mode][self.current_item])
+            self.items[self.mode][self.current_item].is_using = True
 
     def unuse(self):
-        self.use_items.remove(self.items[self.current_menu][self.current_item])
-        self.items[self.current_menu][self.current_item].is_using = False
+        self.use_items.remove(self.items[self.mode][self.current_item])
+        self.items[self.mode][self.current_item].is_using = False
 
     def buy(self):
-        if self.money >= self.items[self.current_menu][self.current_item].price:
-            self.buy_items.append(self.items[self.current_menu][self.current_item])
-            print(self.items[self.current_menu][self.current_item])
-            self.items[self.current_menu][self.current_item].is_bought = True
-            self.money -= self.items[self.current_menu][self.current_item].price
+        if self.games_link.money >= self.items[self.mode][self.current_item].price:
+            self.buy_items.append(self.items[self.mode][self.current_item])
+            print(self.items[self.mode][self.current_item])
+            self.items[self.mode][self.current_item].is_bought = True
+            #проверить что куплено
+            self.games_link.money -= self.items[self.mode][self.current_item].price
             print(self.use_items)
 
     def update(self):
@@ -266,7 +267,7 @@ class MENU:
 
     def draw(self, screen):
         screen.blit(self.menu_page, (0, 0))
-        screen.blit(self.items[self.current_menu][self.current_item].item_img, self.items[self.current_menu][self.current_item].item_img_rect)
+        screen.blit(self.items[self.mode][self.current_item].item_img, self.items[self.mode][self.current_item].item_img_rect)
 
         self.next_but.draw(screen)
         self.back_but.draw(screen)
@@ -274,28 +275,28 @@ class MENU:
 
 
 
-        if self.current_menu == 1:
-            if not self.items[self.current_menu][self.current_item].is_bought:
+        if self.mode == "clothes":
+            if not self.items[self.mode][self.current_item].is_bought:
                 self.buy_but.draw(screen)
 
-            if not self.items[self.current_menu][self.current_item].is_using:
+            if not self.items[self.mode][self.current_item].is_using:
                 self.use_but.draw(screen)
             else:
                 self.unuse_but.draw(screen)
 
-            if self.items[self.current_menu][self.current_item].is_bought:
+            if self.items[self.mode][self.current_item].is_bought:
                 screen.blit(self.bottom_label_on, (0, 0))
             else:
                 screen.blit(self.bottom_label_off, (0, 0))
 
-            if self.items[self.current_menu][self.current_item].is_using:
+            if self.items[self.mode][self.current_item].is_using:
                 screen.blit(self.bottom_label_on, (0, -112))
             else:
                 screen.blit(self.bottom_label_off, (0, -112))
 
             screen.blit(self.buy_text, self.b_t_rect)
             screen.blit(self.use_text, self.u_t_rect)
-        elif self.current_menu == 0:
+        elif self.mode == "food":
             self.buy_but.draw(screen)
 
 
@@ -325,15 +326,12 @@ class Game:
         self.health_img = load_img("images/health.png", icon_size, icon_size)
         self.dog_img = load_img("images/dog.png", dog_width, dog_height)
 
-        self.menu = MENU(self)
-        self.mini_game = MINI_GAME(self)
-
         button_x = scr_width - but_width
 
         self.buttons = [
-            Button("Еда", button_x, padding * 2 + icon_size, func=self.SET_MODE("food")),
-            Button("Одежда", button_x, (padding * 2 + icon_size) * 1.7, func=self.SET_MODE("clothes")),
-            Button("Игры", button_x, (padding * 2 + icon_size) * 2.4, func=self.SET_MODE("mini_game")),
+            Button("Еда", button_x, padding * 2 + icon_size, func=self.HANDLE_MODE("food")),
+            Button("Одежда", button_x, (padding * 2 + icon_size) * 1.7, func=self.HANDLE_MODE("clothes")),
+            Button("Игры", button_x, (padding * 2 + icon_size) * 2.4, func=self.HANDLE_MODE("mini_game")),
             Button("Улучшить", scr_width - but_width // 2, scr_height - but_height // 2,
                    but_width // 2, but_height // 2, font_jr, func=self.increase_money)
         ]
@@ -346,8 +344,15 @@ class Game:
 
         self.run()
 
-    def SET_MODE(self, mode):
+    def HANDLE_MODE(self, mode="main"):
         self.mode = mode
+        if self.mode == "food":
+            self.menu = MENU(self)
+        elif self.mode == "clothes":
+            self.menu = MENU(self)
+        elif self.mode == "mini_game":
+            self.mini_game = MINI_GAME(self)
+
 
     def increase_money(self):
         for cost, check in self.costs_of_upgrade.items():
@@ -398,20 +403,25 @@ class Game:
             for btn in self.buttons:
                 btn.is_clicked(event)
 
-            if self.menu.current_menu == 0 or self.menu.current_menu == 1:
-                self.menu.is_clicked(event)
+                if self.mode == "food":
+                    self.menu.is_clicked(event)
+                if self.mode == "clothes":
+                    self.menu.is_clicked(event)
 
-            if self.mini_game.game_menu:
+            if self.mode == "mini_game":
                 self.mini_game.is_clicked(event)
 
     def update(self):
         for btn in self.buttons:
             btn.update()
 
-        if self.menu.current_menu == 0 or self.menu.current_menu == 1:
+        if self.mode == "food":
             self.menu.update()
 
-        if self.mini_game.game_menu:
+        if self.mode == "clothes":
+            self.menu.update()
+
+        if self.mode == "mini_game":
             self.mini_game.update()
 
     def draw(self):
@@ -436,7 +446,9 @@ class Game:
         for item in self.menu.use_items:
             self.screen.blit(item.item_img, (scr_width//2 - dog_width//2, dog_y))
 
-        if self.menu.current_menu == 0 or self.menu.current_menu == 1:
+        if self.mode == "food":
+            self.menu.draw(self.screen)
+        if self.mode == "clothes":
             self.menu.draw(self.screen)
 
         if self.mini_game.game_menu:
