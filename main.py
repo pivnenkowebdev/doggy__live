@@ -328,10 +328,11 @@ class Game:
 
         button_x = scr_width - but_width
 
+        # кнопки создавались сразу с вызванными колбеками - нужны лямбды
         self.buttons = [
-            Button("Еда", button_x, padding * 2 + icon_size, func=self.HANDLE_MODE("food")),
-            Button("Одежда", button_x, (padding * 2 + icon_size) * 1.7, func=self.HANDLE_MODE("clothes")),
-            Button("Игры", button_x, (padding * 2 + icon_size) * 2.4, func=self.HANDLE_MODE("mini_game")),
+            Button("Еда", button_x, padding * 2 + icon_size, func=lambda: self.HANDLE_MODE("food")),
+            Button("Одежда", button_x, (padding * 2 + icon_size) * 1.7, func=lambda: self.HANDLE_MODE("clothes")),
+            Button("Игры", button_x, (padding * 2 + icon_size) * 2.4, func=lambda: self.HANDLE_MODE("mini_game")),
             Button("Улучшить", scr_width - but_width // 2, scr_height - but_height // 2,
                    but_width // 2, but_height // 2, font_jr, func=self.increase_money)
         ]
