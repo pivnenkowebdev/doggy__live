@@ -155,7 +155,8 @@ class MINI_GAME:
 class MENU:
     def __init__(self, games_link):
         self.mode = games_link.mode
-        #мне нужно здесь обрабатывать моды из games_link (turn on/off)
+        #ссылка на всю игру
+        self.games_link = games_link
         self.menu_page = load_img("images/menu/menu_page.png", scr_width, scr_height)
         self.bottom_label_off = load_img("images/menu/bottom_label_off.png", scr_width, scr_height)
         self.bottom_label_on = load_img("images/menu/bottom_label_on.png", scr_width, scr_height)
@@ -234,22 +235,37 @@ class MENU:
             self.price = self.items[self.mode][self.current_item].price
 
     def use(self):
-        if self.items[self.mode][self.current_item].is_bought:
-            self.use_items.append(self.items[self.mode][self.current_item])
-            self.items[self.mode][self.current_item].is_using = True
+        item = self.items[self.mode][self.current_item]
+        if item.is_bought and item not in self.use_items:
+            self.use_items.append(item)
+            item.is_using = True
 
     def unuse(self):
-        self.use_items.remove(self.items[self.mode][self.current_item])
-        self.items[self.mode][self.current_item].is_using = False
+        item = self.items[self.mode][self.current_item]
+        if item in self.use_items:
+            self.use_items.remove(item)
+            item.is_using = False
 
     def buy(self):
-        if self.games_link.money >= self.items[self.mode][self.current_item].price:
-            self.buy_items.append(self.items[self.mode][self.current_item])
-            print(self.items[self.mode][self.current_item])
-            self.items[self.mode][self.current_item].is_bought = True
-            #проверить что куплено
-            self.games_link.money -= self.items[self.mode][self.current_item].price
-            print(self.use_items)
+        item = self.items[self.mode][self.current_item]
+        # проверка на то что куплено или нет
+        if self.games_link.money >= item.price and not item.is_bought:
+            self.buy_items.append(item)
+            item.is_bought = True
+            self.games_link.money -= item.price
+            print(f"Куплено: {item.name}, осталось денег: {self.games_link.money}")
+
+            # если еда, применяем её эффекты сразу
+            if self.mode == "food":
+                self.games_link.satiety += item.sat_pow
+                self.games_link.health += item.med_pow
+                # счастье можно тоже увеличить, например:
+                self.games_link.happiness += item.med_pow // 2
+
+                # ограничение по максимальному значению (чтобы пЭс не был имбой)
+                self.games_link.satiety = min(self.games_link.satiety, 100)
+                self.games_link.health = min(self.games_link.health, 100)
+                self.games_link.happiness = min(self.games_link.happiness, 100)
 
     def update(self):
         self.next_but.update()
@@ -307,6 +323,8 @@ class Game:
         p.display.set_caption("Виртуальный питомец")
         pet_icon = p.Surface.convert(p.image.load("images/dog.png"))
         p.display.set_icon(pet_icon)
+        self.menu = None
+        self.mini_game = None
 
         self.menu = None
 
@@ -329,10 +347,11 @@ class Game:
 
         button_x = scr_width - but_width
 
+        # кнопки создавались сразу с вызванными колбеками - нужны лямбды
         self.buttons = [
-            Button("Еда", button_x, padding * 2 + icon_size, func=self.HANDLE_MODE("food")),
-            Button("Одежда", button_x, (padding * 2 + icon_size) * 1.7, func=self.HANDLE_MODE("clothes")),
-            Button("Игры", button_x, (padding * 2 + icon_size) * 2.4, func=self.HANDLE_MODE("mini_game")),
+            Button("Еда", button_x, padding * 2 + icon_size, func=lambda: self.HANDLE_MODE("food")),
+            Button("Одежда", button_x, (padding * 2 + icon_size) * 1.7, func=lambda: self.HANDLE_MODE("clothes")),
+            Button("Игры", button_x, (padding * 2 + icon_size) * 2.4, func=lambda: self.HANDLE_MODE("mini_game")),
             Button("Улучшить", scr_width - but_width // 2, scr_height - but_height // 2,
                    but_width // 2, but_height // 2, font_jr, func=self.increase_money)
         ]
@@ -353,7 +372,8 @@ class Game:
             self.menu = MENU(self)
         elif self.mode == "mini_game":
             self.mini_game = MINI_GAME(self)
-
+            #запуск игры
+            self.mini_game.game_menu = True
 
     def increase_money(self):
         for cost, check in self.costs_of_upgrade.items():
@@ -386,14 +406,14 @@ class Game:
         for event in p.event.get():
 
             self.click(event)
-            # по хорошему тогда нужно убрать ниже все проверки и вынести в отдельные методы как и click (писать обработку условия внутри)
 
             if event.type == p.QUIT:
                 p.quit()
                 exit()
-                # если есть возможность избежать вложенных условий - круто
+            # сброс режима
             if event.type == p.KEYDOWN and event.key == p.K_ESCAPE:
-                self.menu.current_menu = -1
+                self.menu = None
+                self.mode = "main"
 
             elif event.type == self.FARM_MONEY:
                 self.money += 1
@@ -429,42 +449,35 @@ class Game:
         self.screen.blit(self.background, (0, 0))
 
         self.screen.blit(self.happin_img, (padding * 2, padding * 2))
-        self.screen.blit(self.satiety_img, (padding * 2, padding  * 2 + icon_size))
+        self.screen.blit(self.satiety_img, (padding * 2, padding * 2 + icon_size))
         self.screen.blit(self.health_img, (padding * 2, padding * 2 + icon_size * 2))
         self.screen.blit(self.money_img, (scr_width - icon_size, padding * 2))
 
-
-        self.screen.blit(text_render(self.happiness), (padding + icon_size, (icon_size - padding * 2)//2))
+        self.screen.blit(text_render(self.happiness), (padding + icon_size, (icon_size - padding * 2) // 2))
         self.screen.blit(text_render(self.satiety), (padding + icon_size, (icon_size - padding * 2) * 1.7))
         self.screen.blit(text_render(self.health), (padding + icon_size, (icon_size - padding * 2) * 2.8))
-        self.screen.blit(text_render(self.money), (scr_width - icon_size * 1.5, (icon_size - padding * 2)//2))
+        self.screen.blit(text_render(self.money), (scr_width - icon_size * 1.5, (icon_size - padding * 2) // 2))
 
         for btn in self.buttons:
             btn.draw(self.screen)
 
-        self.screen.blit(self.dog_img, (scr_width//2 - dog_width//2, dog_y))
+        self.screen.blit(self.dog_img, (scr_width // 2 - dog_width // 2, dog_y))
 
-        for item in self.menu.use_items:
-            self.screen.blit(item.item_img, (scr_width//2 - dog_width//2, dog_y))
+        # вот тут добавил проверку на то, что меню инициализиировано
+        if self.menu:
+            for item in self.menu.use_items:
+                self.screen.blit(item.item_img, (scr_width // 2 - dog_width // 2, dog_y))
 
         if self.mode == "food":
             self.menu.draw(self.screen)
         if self.mode == "clothes":
             self.menu.draw(self.screen)
 
-        if self.mini_game.game_menu:
+        if self.mini_game and self.mini_game.game_menu:
             self.mini_game.draw(self.screen)
 
         p.display.flip()
 
+
 if __name__ == "__main__":
     Game()
-
-#1 refactor услвие для смены режимов в игре(меню одежды и еды, мини игра, мейн)
-#1.1 рефактор MENU.draw()
-
-    #1. Отрисовать окно мини-игры при нажатии на кнопку "Игры" в меню +
-    #1.1 Отрисовать собаку +
-    #1.2 Отрисовка игрушек
-    #2. разработать контакт собаки и игрушек
-    #3. закрытие игры по времени
