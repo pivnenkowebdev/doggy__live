@@ -326,8 +326,6 @@ class Game:
         self.menu = None
         self.mini_game = None
 
-        self.menu = None
-
         self.items_price = 0
         self.coins_per_second = 1000
         self.costs_of_upgrade = {100: False, 1000: False, 5000: False, 10000: False}
