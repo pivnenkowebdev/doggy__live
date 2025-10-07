@@ -273,8 +273,6 @@ class MENU:
         self.back_but.draw(screen)
         screen.blit(text_render(self.price), (scr_width // 2 - 10, scr_height // 3.2))
 
-
-
         if self.mode == "clothes":
             if not self.items[self.mode][self.current_item].is_bought:
                 self.buy_but.draw(screen)
@@ -296,6 +294,7 @@ class MENU:
 
             screen.blit(self.buy_text, self.b_t_rect)
             screen.blit(self.use_text, self.u_t_rect)
+
         elif self.mode == "food":
             self.buy_but.draw(screen)
 
@@ -308,6 +307,8 @@ class Game:
         p.display.set_caption("Виртуальный питомец")
         pet_icon = p.Surface.convert(p.image.load("images/dog.png"))
         p.display.set_icon(pet_icon)
+
+        self.menu = None
 
         self.items_price = 0
         self.coins_per_second = 1000
@@ -344,7 +345,7 @@ class Game:
 
         self.run()
 
-    def HANDLE_MODE(self, mode="main"):
+    def HANDLE_MODE(self, mode):
         self.mode = mode
         if self.mode == "food":
             self.menu = MENU(self)
